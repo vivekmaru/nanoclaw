@@ -39,6 +39,86 @@ grep -E "image found|image NOT found|image missing" logs/nanoclaw.log
 
 If you need Kubernetes enabled, set `CONTAINER_IMAGE` to an image stored in a registry that the kubelet won't GC, or raise the GC thresholds.
 
+## 5. [FIXED] Third-party API providers — model remapping, path prefix, and streaming
+
+When using a third-party Anthropic-compatible API (e.g. z.ai, OpenRouter) instead of `api.anthropic.com`, three issues surface in the credential proxy.
+
+### Symptoms
+
+- `"There's an issue with the selected model (claude-sonnet-4-6). It may not exist or you may not have access to it."` — the container agent fails on every message
+- `"API Error: terminated"` — the agent connects but the response stream is cut short
+- 404 responses from the upstream API (nginx default page)
+
+### Root Causes and Fixes
+
+**1. Path prefix stripped from base URL**
+
+The credential proxy extracted only the hostname from `ANTHROPIC_BASE_URL`. If the base URL has a path component (e.g. `https://api.z.ai/api/anthropic`), the `/api/anthropic` prefix was lost. Requests went to `api.z.ai/v1/messages` instead of `api.z.ai/api/anthropic/v1/messages`.
+
+**Fix**: The proxy now preserves the base URL path prefix (`basePath`) and prepends it to every forwarded request:
+```typescript
+const basePath = upstreamUrl.pathname.replace(/\/$/, '');
+// ...
+path: basePath + req.url,  // /api/anthropic/v1/messages
+```
+
+**2. Model name mismatch**
+
+Claude Code SDK inside containers sends standard model names like `claude-sonnet-4-6`. Third-party providers use different names (e.g. `glm-5.1`). The proxy needs to remap model names in request bodies.
+
+**Fix**: Add `MODEL_MAP` to `.env`:
+```bash
+MODEL_MAP={"claude-sonnet-4-6":"glm-5.1","claude-haiku-4-5-20251001":"glm-4.6","claude-opus-4-6":"glm-5.1"}
+```
+The proxy parses this JSON and rewrites the `model` field in every request body before forwarding.
+
+**3. Response buffering breaks SSE streaming**
+
+The auto-failover feature buffered all responses to detect rate-limit errors before forwarding. But Claude Code SDK uses `"stream": true` (SSE) — it expects chunks arriving incrementally. Buffering the entire response and sending it as a single blob caused the SDK to interpret it as a terminated stream.
+
+**Fix**: The proxy now uses a split strategy:
+- **2xx responses**: Stream through immediately via `upRes.pipe(res)` — preserves SSE
+- **Error responses (4xx/5xx)**: Buffer fully, check for rate limits, retry with next key if needed
+
+### Configuration
+
+```bash
+# .env — third-party API with multiple keys for auto-failover
+ANTHROPIC_API_KEY=key1,key2,key3
+ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic
+MODEL_MAP={"claude-sonnet-4-6":"glm-5.1","claude-haiku-4-5-20251001":"glm-4.6"}
+```
+
+### Diagnosis
+
+```bash
+# Test the upstream API directly (bypass proxy)
+curl -s -X POST "https://api.z.ai/api/anthropic/v1/messages" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $YOUR_KEY" \
+  -d '{"model":"glm-5.1","max_tokens":10,"messages":[{"role":"user","content":"hi"}]}'
+
+# Check proxy logs for key rotation and model remapping
+grep -E 'Rate limit|rotating|Remapped model|upstream error' logs/nanoclaw.log | tail -10
+
+# Check if proxy detects multiple keys
+grep 'keyCount' logs/nanoclaw.log | tail -3
+
+# Test the proxy directly (from the host)
+curl -v -X POST http://172.17.0.1:3001/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: placeholder" \
+  -d '{"model":"claude-sonnet-4-6","max_tokens":10,"messages":[{"role":"user","content":"hi"}]}'
+```
+
+### What to Watch For
+
+- **New Claude model names**: When Anthropic releases new models (e.g. `claude-sonnet-5-0`), add them to `MODEL_MAP` in `.env` or the proxy will forward the unmapped name
+- **Streaming protocol changes**: If a provider doesn't support SSE streaming, the proxy's streaming path will fail. Check with `curl` first
+- **Rate-limit detection gaps**: `isRateLimitError()` checks for HTTP 429 and specific JSON error codes (`1308` for z.ai, `rate_limit_error` type for Anthropic). New providers may use different error formats — extend the detection function in `credential-proxy.ts`
+- **Path prefix changes**: If the provider changes their URL structure, update `ANTHROPIC_BASE_URL` in `.env`
+- **Container env vars**: The container only sees `ANTHROPIC_BASE_URL=http://host.docker.internal:3001` (the proxy URL) and `ANTHROPIC_API_KEY=placeholder`. All real routing happens in the proxy
+
 ## Quick Status Check
 
 ```bash
