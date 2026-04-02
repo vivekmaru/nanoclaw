@@ -4,8 +4,11 @@ The official documentation is at **[docs.nanoclaw.dev](https://docs.nanoclaw.dev
 
 The files in this directory are original design documents and developer references. For the most current and accurate information, use the documentation site.
 
-| This directory | Documentation site |
+| This directory | Documentation site / purpose |
 |---|---|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed repository architecture with diagrams |
+| [USAGE_GUIDE.md](USAGE_GUIDE.md) | Day-to-day operations and workflows |
+| [ADVANCED_USE_CASES.md](ADVANCED_USE_CASES.md) | Power-user patterns and deployment scenarios |
 | [SPEC.md](SPEC.md) | [Architecture](https://docs.nanoclaw.dev/concepts/architecture) |
 | [SECURITY.md](SECURITY.md) | [Security model](https://docs.nanoclaw.dev/concepts/security) |
 | [REQUIREMENTS.md](REQUIREMENTS.md) | [Introduction](https://docs.nanoclaw.dev/introduction) |
