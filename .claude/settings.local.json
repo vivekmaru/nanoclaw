@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sudo apt-get:*)",
+      "Bash(rm -rf node_modules)",
+      "Bash(bash setup.sh)",
+      "Bash(npx tsx:*)",
+      "Bash(curl -fsSL onecli.sh/install)",
+      "Bash(sh)",
+      "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
+      "Bash(onecli secrets:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(git config:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npx vitest:*)",
+      "Bash(node:*)",
+      "Bash(git remote:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git stash:*)",
+      "Bash(npm view:*)",
+      "Bash(find /home/debian/dev/nanoclaw/container -name *.ts -o -name *.js -o -name *.sh)",
+      "Bash(systemctl --user restart nanoclaw)",
+      "Bash(systemctl --user status nanoclaw)",
+      "Bash(ls -lt /home/debian/dev/nanoclaw/groups/whatsapp_main/logs/container-*.log)",
+      "Bash(docker exec:*)",
+      "Bash(ls:*)",
+      "Bash(curl -s -X POST http://127.0.0.1:3001/v1/messages -H \"Content-Type: application/json\" -H \"x-api-key: placeholder\" -d '{\"\"\"\"model\"\"\"\":\"\"\"\"claude-sonnet-4-6\"\"\"\",\"\"\"\"max_tokens\"\"\"\":10,\"\"\"\"messages\"\"\"\":[{\"\"\"\"role\"\"\"\":\"\"\"\"user\"\"\"\",\"\"\"\"content\"\"\"\":\"\"\"\"hi\"\"\"\"}]}')",
+      "Bash(docker ps:*)",
+      "Bash(python3:*)",
+      "Bash(sqlite3:*)"
+    ]
+  }
+}

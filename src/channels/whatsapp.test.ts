@@ -117,7 +117,6 @@ vi.mock('@whiskeysockets/baileys', () => {
 import { WhatsAppChannel, WhatsAppChannelOpts } from './whatsapp.js';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import { getLastGroupSync, updateChatName, setLastGroupSync } from '../db.js';
-import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import { isImageMessage, processImage } from '../image.js';
 
 // --- Test helpers ---
