@@ -33,7 +33,8 @@
       "Bash(sqlite3:*)",
       "Bash(npm test:*)",
       "Bash(npm_config_build_from_source=true npm install sharp@0.34.5)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }
