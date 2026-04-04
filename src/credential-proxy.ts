@@ -41,10 +41,7 @@ function buildModelMap(): Map<string, string> {
 }
 
 /** Check if a response body indicates a rate-limit error. */
-function isRateLimitError(
-  statusCode: number,
-  body: string,
-): boolean {
+function isRateLimitError(statusCode: number, body: string): boolean {
   if (statusCode === 429) return true;
   // z.ai uses 200 with error code in body, or non-standard codes
   try {
@@ -93,10 +90,7 @@ export function startCredentialProxy(
   let activeKeyIndex = 0;
 
   if (apiKeys.length > 1) {
-    logger.info(
-      { keyCount: apiKeys.length },
-      'API key auto-failover enabled',
-    );
+    logger.info({ keyCount: apiKeys.length }, 'API key auto-failover enabled');
   }
 
   /**
