@@ -1,10 +1,30 @@
 import fs from 'fs';
 import path from 'path';
-import sharp from 'sharp';
 import type { WAMessage } from '@whiskeysockets/baileys';
 
 const MAX_DIMENSION = 1024;
 const IMAGE_REF_PATTERN = /\[Image: (attachments\/[^\]]+)\]/g;
+
+// Lazy-load sharp — the prebuilt binary may not support older CPUs
+// (e.g. linux-x64 requires v2 microarchitecture). Only fail when
+// image processing is actually attempted, not at startup.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _sharp: any = undefined;
+async function getSharp() {
+  if (_sharp === undefined) {
+    try {
+      _sharp = await import('sharp');
+    } catch {
+      _sharp = null;
+    }
+  }
+  if (!_sharp) {
+    throw new Error(
+      'sharp module not available — image processing is disabled on this CPU',
+    );
+  }
+  return _sharp as typeof import('sharp');
+}
 
 export interface ProcessedImage {
   content: string;
@@ -27,6 +47,7 @@ export async function processImage(
 ): Promise<ProcessedImage | null> {
   if (!buffer || buffer.length === 0) return null;
 
+  const sharp = await getSharp();
   const resized = await sharp(buffer)
     .resize(MAX_DIMENSION, MAX_DIMENSION, {
       fit: 'inside',
