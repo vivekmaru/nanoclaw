@@ -759,7 +759,12 @@ async function main(): Promise<void> {
     channelEntries.map(async ({ name, channel }) => {
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(
-          () => reject(new Error(`connect timed out after ${CHANNEL_CONNECT_TIMEOUT_MS / 1000}s`)),
+          () =>
+            reject(
+              new Error(
+                `connect timed out after ${CHANNEL_CONNECT_TIMEOUT_MS / 1000}s`,
+              ),
+            ),
           CHANNEL_CONNECT_TIMEOUT_MS,
         ),
       );

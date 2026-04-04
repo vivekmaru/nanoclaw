@@ -35,7 +35,10 @@
       "Bash(npm_config_build_from_source=true npm install sharp@0.34.5)",
       "Bash(git commit:*)",
       "Bash(npm uninstall:*)",
-      "Bash(systemctl --user is-active nanoclaw)"
+      "Bash(systemctl --user is-active nanoclaw)",
+      "Bash(journalctl --user -u nanoclaw --no-pager -n 50 --output=cat)",
+      "Bash(systemctl --user stop nanoclaw)",
+      "Bash(systemctl --user start nanoclaw)"
     ]
   }
 }
