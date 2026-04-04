@@ -30,7 +30,8 @@
       "Bash(curl -s -X POST http://127.0.0.1:3001/v1/messages -H \"Content-Type: application/json\" -H \"x-api-key: placeholder\" -d '{\"\"\"\"model\"\"\"\":\"\"\"\"claude-sonnet-4-6\"\"\"\",\"\"\"\"max_tokens\"\"\"\":10,\"\"\"\"messages\"\"\"\":[{\"\"\"\"role\"\"\"\":\"\"\"\"user\"\"\"\",\"\"\"\"content\"\"\"\":\"\"\"\"hi\"\"\"\"}]}')",
       "Bash(docker ps:*)",
       "Bash(python3:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(npm test:*)"
     ]
   }
 }
