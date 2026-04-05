@@ -78,6 +78,8 @@ Then run `/setup`. Claude Code handles everything: dependencies, authentication,
 
 ## Usage
 
+For a practical operations walkthrough, see [docs/USAGE_GUIDE.md](docs/USAGE_GUIDE.md).
+
 Talk to your assistant with the trigger word (default: `@Andy`):
 
 ```
@@ -136,7 +138,7 @@ Channels --> SQLite --> Polling loop --> Container (Claude Agent SDK) --> Respon
 
 Single Node.js process. Channels are added via skills and self-register at startup — the orchestrator connects whichever ones have credentials present. Agents execute in isolated Linux containers with filesystem isolation. Only mounted directories are accessible. Per-group message queue with concurrency control. IPC via filesystem.
 
-For the full architecture details, see the [documentation site](https://docs.nanoclaw.dev/concepts/architecture).
+For full architecture details, see the [documentation site](https://docs.nanoclaw.dev/concepts/architecture) and the repository-level [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 Key files:
 - `src/index.ts` - Orchestrator: state, message loop, agent invocation
@@ -198,6 +200,10 @@ Only security fixes, bug fixes, and clear improvements will be accepted to the b
 Everything else (new capabilities, OS compatibility, hardware support, enhancements) should be contributed as skills.
 
 This keeps the base system minimal and lets every user customize their installation without inheriting features they don't want.
+
+## Advanced Patterns
+
+See [docs/ADVANCED_USE_CASES.md](docs/ADVANCED_USE_CASES.md) for multi-group orchestration patterns, autonomous scheduled cadences, repository maintenance workflows, and secure mount strategies.
 
 ## Community
 
