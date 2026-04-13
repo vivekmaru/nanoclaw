@@ -46,6 +46,7 @@ function isRateLimitError(statusCode: number, body: string): boolean {
   // z.ai uses 200 with error code in body, or non-standard codes
   try {
     const json = JSON.parse(body);
+    if (json.error?.code === '1302') return true;
     if (json.error?.code === '1308') return true;
     if (json.error?.type === 'rate_limit_error') return true;
   } catch {
@@ -220,15 +221,28 @@ export function startCredentialProxy(
         if (modelMap.size > 0 && body.length > 0) {
           try {
             const json = JSON.parse(body.toString('utf-8'));
-            if (json.model && modelMap.has(json.model)) {
-              const original = json.model;
-              json.model = modelMap.get(original);
-              body = Buffer.from(JSON.stringify(json), 'utf-8');
-              headers['content-length'] = body.length;
-              logger.debug(
-                { from: original, to: json.model },
-                'Remapped model name',
-              );
+            if (json.model) {
+              // Try exact match first, then prefix match (handles dated model IDs
+              // like claude-sonnet-4-6-20250514 matching a claude-sonnet-4-6 entry)
+              let mappedTo: string | undefined = modelMap.get(json.model);
+              if (!mappedTo) {
+                for (const [key, value] of modelMap) {
+                  if (json.model.startsWith(key)) {
+                    mappedTo = value;
+                    break;
+                  }
+                }
+              }
+              if (mappedTo) {
+                const original = json.model;
+                json.model = mappedTo;
+                body = Buffer.from(JSON.stringify(json), 'utf-8');
+                headers['content-length'] = body.length;
+                logger.debug(
+                  { from: original, to: json.model },
+                  'Remapped model name',
+                );
+              }
             }
           } catch {
             // Not JSON or no model field — pass through as-is

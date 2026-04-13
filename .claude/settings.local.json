@@ -38,7 +38,10 @@
       "Bash(systemctl --user is-active nanoclaw)",
       "Bash(journalctl --user -u nanoclaw --no-pager -n 50 --output=cat)",
       "Bash(systemctl --user stop nanoclaw)",
-      "Bash(systemctl --user start nanoclaw)"
+      "Bash(systemctl --user start nanoclaw)",
+      "Bash(./container/build.sh)",
+      "Bash(journalctl --user -u nanoclaw --since \"2 min ago\" --no-pager)",
+      "Bash(journalctl:*)"
     ]
   }
 }

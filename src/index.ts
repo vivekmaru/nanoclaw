@@ -446,10 +446,21 @@ async function runAgent(
           output.error,
         );
 
-      if (isStaleSession) {
+      // Clear sessions that hit persistent 429 errors (all key rotation
+      // exhausted). A poisoned session with hundreds of failed tool calls
+      // will keep retrying those calls on every resume, creating an
+      // infinite 429 loop. Starting fresh breaks the cycle.
+      const isPersistent429 =
+        sessionId &&
+        output.error &&
+        /429.*rate limit/i.test(output.error);
+
+      if (isStaleSession || isPersistent429) {
         logger.warn(
           { group: group.name, staleSessionId: sessionId, error: output.error },
-          'Stale session detected — clearing for next retry',
+          isPersistent429
+            ? 'Persistent 429 — clearing session to break retry loop'
+            : 'Stale session detected — clearing for next retry',
         );
         delete sessions[group.folder];
         deleteSession(group.folder);

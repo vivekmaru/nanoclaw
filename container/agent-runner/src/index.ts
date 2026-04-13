@@ -38,7 +38,7 @@ interface ContainerInput {
 
 interface ImageContentBlock {
   type: 'image';
-  source: { type: 'base64'; media_type: string; data: string };
+  source: { type: 'base64'; media_type: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'; data: string };
 }
 interface TextContentBlock {
   type: 'text';
@@ -416,7 +416,7 @@ async function runQuery(
         const data = fs.readFileSync(imgPath).toString('base64');
         blocks.push({
           type: 'image',
-          source: { type: 'base64', media_type: img.mediaType, data },
+          source: { type: 'base64', media_type: img.mediaType as ImageContentBlock['source']['media_type'], data },
         });
       } catch (err) {
         log(`Failed to load image: ${imgPath}`);

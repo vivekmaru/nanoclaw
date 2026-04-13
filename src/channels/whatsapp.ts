@@ -251,21 +251,49 @@ export class WhatsAppChannel implements Channel {
           if (!rawJid || rawJid === 'status@broadcast') continue;
 
           // Translate LID JID to phone JID if applicable.
-          // Prefer senderPn from the message key (available in newer WA protocol)
-          // since translateJid may fail to resolve LID→phone via signalRepository.
           let chatJid = await this.translateJid(rawJid);
-          if (chatJid.endsWith('@lid') && (msg.key as any).senderPn) {
+          const isGroup = chatJid.endsWith('@g.us');
+          const groups = this.opts.registeredGroups();
+
+          // Prefer senderPn over signalRepository mapping.
+          // signalRepository can return wrong phone numbers for LIDs (e.g.
+          // mapping a self-chat LID to a different contact). senderPn is the
+          // authoritative phone number from the message key (newer WA protocol).
+          // Check it regardless of whether translateJid already resolved the LID,
+          // since the resolution may be incorrect.
+          if ((msg.key as any).senderPn) {
             const pn = (msg.key as any).senderPn as string;
             const phoneJid = pn.includes('@') ? pn : `${pn}@s.whatsapp.net`;
-            this.setLidPhoneMapping(
-              rawJid.split('@')[0].split(':')[0],
-              phoneJid,
-            );
-            chatJid = phoneJid;
-            logger.info(
-              { lidJid: rawJid, phoneJid },
-              'Translated LID via senderPn',
-            );
+            // Only override if senderPn maps to a known registered group
+            if (groups[phoneJid]) {
+              if (chatJid !== phoneJid) {
+                this.setLidPhoneMapping(
+                  rawJid.split('@')[0].split(':')[0],
+                  phoneJid,
+                );
+                logger.info(
+                  { lidJid: rawJid, wrongJid: chatJid, phoneJid },
+                  'Overrode wrong LID mapping with senderPn',
+                );
+              }
+              chatJid = phoneJid;
+            }
+          }
+
+          // Self-chat fallback: if the translated JID doesn't match any registered
+          // group and this is a DM, route to the bot's own number.
+          // WhatsApp's signalRepository can return wrong phone numbers for LIDs,
+          // and some messages don't have senderPn. Any DM from an unregistered
+          // number is most likely the self-chat with a corrupted LID mapping.
+          if (!isGroup && !groups[chatJid] && this.sock.user) {
+            const botPhone = `${this.sock.user.id.split(':')[0]}@s.whatsapp.net`;
+            if (groups[botPhone]) {
+              logger.info(
+                { rawJid, wrongJid: chatJid, selfChatJid: botPhone },
+                'DM from unregistered number, routing to bot self-chat',
+              );
+              chatJid = botPhone;
+            }
           }
 
           const timestamp = new Date(
@@ -273,7 +301,6 @@ export class WhatsAppChannel implements Channel {
           ).toISOString();
 
           // Always notify about chat metadata for group discovery
-          const isGroup = chatJid.endsWith('@g.us');
           this.opts.onChatMetadata(
             chatJid,
             timestamp,
@@ -283,7 +310,6 @@ export class WhatsAppChannel implements Channel {
           );
 
           // Only deliver full message for registered groups
-          const groups = this.opts.registeredGroups();
           if (groups[chatJid]) {
             let content =
               normalized.conversation ||
