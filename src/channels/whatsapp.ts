@@ -280,7 +280,6 @@ export class WhatsAppChannel implements Channel {
             }
           }
 
-
           const timestamp = new Date(
             Number(msg.messageTimestamp) * 1000,
           ).toISOString();

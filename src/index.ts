@@ -457,7 +457,9 @@ async function runAgent(
       // new sessions, so checking it alone would always be false here.
       const effectiveSessionId = sessionId || sessions[group.folder];
       const isPersistent429 =
-        effectiveSessionId && output.error && /429.*rate limit/i.test(output.error);
+        effectiveSessionId &&
+        output.error &&
+        /429.*rate limit/i.test(output.error);
 
       if (isStaleSession || isPersistent429) {
         logger.warn(

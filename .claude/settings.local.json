@@ -46,7 +46,12 @@
       "WebFetch(domain:github.com)",
       "Bash(systemctl --user status nanoclaw --no-pager)",
       "Bash(timedatectl)",
-      "Read(//etc/**)"
+      "Read(//etc/**)",
+      "Bash(git push *)",
+      "Bash(gh auth *)",
+      "Read(//home/debian/.config/gh/**)",
+      "Bash(git -C /home/debian/projects/dev-blog config --list)",
+      "Bash(docker run *)"
     ]
   }
 }
