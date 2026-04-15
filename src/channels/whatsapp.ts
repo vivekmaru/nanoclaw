@@ -280,21 +280,6 @@ export class WhatsAppChannel implements Channel {
             }
           }
 
-          // Self-chat fallback: if the translated JID doesn't match any registered
-          // group and this is a DM, route to the bot's own number.
-          // WhatsApp's signalRepository can return wrong phone numbers for LIDs,
-          // and some messages don't have senderPn. Any DM from an unregistered
-          // number is most likely the self-chat with a corrupted LID mapping.
-          if (!isGroup && !groups[chatJid] && this.sock.user) {
-            const botPhone = `${this.sock.user.id.split(':')[0]}@s.whatsapp.net`;
-            if (groups[botPhone]) {
-              logger.info(
-                { rawJid, wrongJid: chatJid, selfChatJid: botPhone },
-                'DM from unregistered number, routing to bot self-chat',
-              );
-              chatJid = botPhone;
-            }
-          }
 
           const timestamp = new Date(
             Number(msg.messageTimestamp) * 1000,

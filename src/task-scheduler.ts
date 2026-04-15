@@ -237,8 +237,30 @@ async function runTask(
     : result
       ? result.slice(0, 200)
       : 'Completed';
-  updateTaskAfterRun(task.id, nextRun, resultSummary);
+
+  // On failure, schedule a retry before the next recurring slot instead of
+  // silently dropping the run until tomorrow. Only applies to recurring tasks
+  // (once tasks don't repeat). The retry fires 90 min from now — enough time
+  // for z.ai rate limits to clear without missing the whole day.
+  let actualNextRun = nextRun;
+  if (error && task.schedule_type !== 'once' && nextRun) {
+    const retryAt = new Date(Date.now() + TASK_RETRY_DELAY_MS).toISOString();
+    if (retryAt < nextRun) {
+      actualNextRun = retryAt;
+      logger.info(
+        { taskId: task.id, retryAt, scheduledNextRun: nextRun },
+        'Task failed, scheduling retry before next window',
+      );
+    }
+  }
+
+  updateTaskAfterRun(task.id, actualNextRun, resultSummary);
 }
+
+// How long to wait before retrying a failed recurring task.
+// Chosen to be longer than z.ai's typical rate-limit window (~1h)
+// but short enough to still publish within the same day.
+const TASK_RETRY_DELAY_MS = 90 * 60 * 1000; // 90 minutes
 
 let schedulerRunning = false;
 

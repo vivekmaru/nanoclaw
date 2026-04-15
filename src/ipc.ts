@@ -4,6 +4,43 @@ import path from 'path';
 import { CronExpressionParser } from 'cron-parser';
 
 import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
+
+/**
+ * Parse a naive local datetime string (e.g. "2026-04-14T15:15:00") as
+ * TIMEZONE local time and return the corresponding UTC Date.
+ *
+ * JavaScript's Date constructor treats naive strings as UTC on UTC systems,
+ * which causes "once" tasks to fire at the wrong time on a UTC host.
+ * This uses the Intl formatter to measure the actual UTC offset for the
+ * target timezone at the approximate moment, then applies it.
+ */
+function parseLocalOnce(value: string, timezone: string): Date {
+  // Step 1: treat value as UTC to get a reference point
+  const naive = new Date(value + 'Z');
+  if (isNaN(naive.getTime())) return naive; // propagate invalid
+
+  // Step 2: format that UTC instant in the target timezone
+  const fmt = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  // sv-SE gives ISO-like "YYYY-MM-DD HH:mm:ss"
+  const localStr = fmt.format(naive).replace(' ', 'T');
+
+  // Step 3: measure offset = how far UTC was from local clock at that moment
+  const naiveLocal = new Date(localStr + 'Z');
+  const offsetMs = naive.getTime() - naiveLocal.getTime();
+
+  // Step 4: actual UTC = (value treated as UTC) + offset
+  // e.g. value="15:15 Sydney" → naive=15:15 UTC, localStr="01:15 next day",
+  //      offsetMs = -10h → result = 15:15 UTC + (-10h) = 05:15 UTC ✓
+  return new Date(naive.getTime() + offsetMs);
+}
 import { AvailableGroup } from './container-runner.js';
 import { createTask, deleteTask, getTaskById, updateTask } from './db.js';
 import { isValidGroupFolder } from './group-folder.js';
@@ -238,11 +275,11 @@ export async function processTaskIpc(
           }
           nextRun = new Date(Date.now() + ms).toISOString();
         } else if (scheduleType === 'once') {
-          const date = new Date(data.schedule_value);
+          const date = parseLocalOnce(data.schedule_value, TIMEZONE);
           if (isNaN(date.getTime())) {
             logger.warn(
-              { scheduleValue: data.schedule_value },
-              'Invalid timestamp',
+              { scheduleValue: data.schedule_value, timezone: TIMEZONE },
+              'Invalid timestamp for once task',
             );
             break;
           }
@@ -387,6 +424,11 @@ export async function processTaskIpc(
             const ms = parseInt(updatedTask.schedule_value, 10);
             if (!isNaN(ms) && ms > 0) {
               updates.next_run = new Date(Date.now() + ms).toISOString();
+            }
+          } else if (updatedTask.schedule_type === 'once') {
+            const date = parseLocalOnce(updatedTask.schedule_value, TIMEZONE);
+            if (!isNaN(date.getTime())) {
+              updates.next_run = date.toISOString();
             }
           }
         }

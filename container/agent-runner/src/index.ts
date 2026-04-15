@@ -510,6 +510,7 @@ async function runQuery(
         'Skill',
         'NotebookEdit',
         'mcp__nanoclaw__*',
+        ...(process.env.BRAVE_API_KEY ? ['mcp__brave__*'] : []),
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
@@ -525,6 +526,15 @@ async function runQuery(
             NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
           },
         },
+        ...(process.env.BRAVE_API_KEY
+          ? {
+              brave: {
+                command: 'npx',
+                args: ['-y', '@modelcontextprotocol/server-brave-search'],
+                env: { BRAVE_API_KEY: process.env.BRAVE_API_KEY },
+              },
+            }
+          : {}),
       },
       hooks: {
         PreCompact: [

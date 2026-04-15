@@ -450,10 +450,14 @@ async function runAgent(
       // exhausted). A poisoned session with hundreds of failed tool calls
       // will keep retrying those calls on every resume, creating an
       // infinite 429 loop. Starting fresh breaks the cycle.
+      //
+      // Use sessions[group.folder] rather than the input sessionId: when a
+      // new-session container 429s, the SDK still initialises a session and
+      // the streaming callback saves it. The input sessionId is undefined for
+      // new sessions, so checking it alone would always be false here.
+      const effectiveSessionId = sessionId || sessions[group.folder];
       const isPersistent429 =
-        sessionId &&
-        output.error &&
-        /429.*rate limit/i.test(output.error);
+        effectiveSessionId && output.error && /429.*rate limit/i.test(output.error);
 
       if (isStaleSession || isPersistent429) {
         logger.warn(

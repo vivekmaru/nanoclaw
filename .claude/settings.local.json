@@ -41,7 +41,12 @@
       "Bash(systemctl --user start nanoclaw)",
       "Bash(./container/build.sh)",
       "Bash(journalctl --user -u nanoclaw --since \"2 min ago\" --no-pager)",
-      "Bash(journalctl:*)"
+      "Bash(journalctl:*)",
+      "Bash(npm show:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(systemctl --user status nanoclaw --no-pager)",
+      "Bash(timedatectl)",
+      "Read(//etc/**)"
     ]
   }
 }
