@@ -182,9 +182,11 @@ export class WhatsAppChannel implements Channel {
         this.connected = true;
         logger.info('Connected to WhatsApp');
 
-        // Announce availability so WhatsApp relays subsequent presence updates (typing indicators)
-        this.sock.sendPresenceUpdate('available').catch((err) => {
-          logger.warn({ err }, 'Failed to send presence update');
+        // Suppress global online presence — we are a background bot and should not
+        // appear "online" to contacts. Per-chat typing indicators (composing/paused
+        // sent with a JID) still work independently without a global available broadcast.
+        this.sock.sendPresenceUpdate('unavailable').catch((err) => {
+          logger.warn({ err }, 'Failed to suppress presence');
         });
 
         // Build LID to phone mapping from auth state for self-chat translation

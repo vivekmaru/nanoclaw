@@ -245,9 +245,10 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
         const hasTrigger = getTriggerPattern(group.trigger).test(
           msg.content.trim(),
         );
-        const reqTrigger = !isMainGroup && group.requiresTrigger !== false;
+        const reqTrigger =
+          group.requiresTrigger === true ||
+          (!isMainGroup && group.requiresTrigger !== false);
         return (
-          isMainGroup ||
           !reqTrigger ||
           (hasTrigger &&
             (msg.is_from_me ||
@@ -259,8 +260,11 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
   if (cmdResult.handled) return cmdResult.success;
   // --- End session command interception ---
 
-  // For non-main groups, check if trigger is required and present
-  if (!isMainGroup && group.requiresTrigger !== false) {
+  // Check if trigger is required and present
+  if (
+    group.requiresTrigger === true ||
+    (!isMainGroup && group.requiresTrigger !== false)
+  ) {
     const triggerPattern = getTriggerPattern(group.trigger);
     const allowlistCfg = loadSenderAllowlist();
     const hasTrigger = missedMessages.some(
@@ -564,7 +568,9 @@ async function startMessageLoop(): Promise<void> {
           }
           // --- End session command interception ---
 
-          const needsTrigger = !isMainGroup && group.requiresTrigger !== false;
+          const needsTrigger =
+            group.requiresTrigger === true ||
+            (!isMainGroup && group.requiresTrigger !== false);
 
           // For non-main groups, only act on trigger messages.
           // Non-trigger messages accumulate in DB and get pulled as
